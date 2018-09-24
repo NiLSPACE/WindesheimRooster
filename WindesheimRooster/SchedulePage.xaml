@@ -1,0 +1,22 @@
+﻿<Page
+    x:Class="WindesheimRooster.SchedulePage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:local="using:WindesheimRooster"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="593*"/>
+            <RowDefinition Height="47*"/>
+        </Grid.RowDefinitions>
+        <ListView x:Name="lvSchedule" ContainerContentChanging="lvSchedule_ContainerContentChanging" Grid.Row="0"/>
+        <CommandBar Grid.Row="1" VerticalAlignment="Stretch">
+            <AppBarButton x:Name="btnPreviousWeek" Icon="Back" Label="Previous week" Click="BtnPreviousWeek_Click" />
+            <AppBarButton x:Name="btnNextWeek" Icon="Forward" Label="Next week" Click="BtnNextWeek_Click" />
+            <AppBarButton x:Name="btnPin" Icon="Pin" Label="Pin to start" Click="AppBarButton_Click" IsEnabled="False"/>
+        </CommandBar>
+    </Grid>
+</Page>
