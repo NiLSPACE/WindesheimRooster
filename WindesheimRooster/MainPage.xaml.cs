@@ -26,6 +26,7 @@ namespace WindesheimRooster {
 	public sealed partial class MainPage : Page {
 		const string NO_INTERNET_CONNECTION_MESSAGE = "No internet connection";
 		ClassInfo[] _classes;
+		List<ClassInfo> _selectedClasses = new List<ClassInfo>();
 		Task _classLoadingTask;
 		public MainPage() {
 			this.InitializeComponent();
@@ -53,32 +54,26 @@ namespace WindesheimRooster {
 				return;
 			}
 
+			var requestedClasses = (e.Parameter as string).Split(',').Select(x => x.Trim());
 			if (NetworkInterface.GetIsNetworkAvailable()) {
 				// Make sure the classes are loaded.
 				await _classLoadingTask;
 
-				var item = _classes.First(x => x.displayname == e.Parameter as string);
-				Frame.Navigate(typeof(SchedulePage), item);
+				var items = requestedClasses.Select(x => _classes.First(@class => @class.displayname == x)).ToArray();
+				Frame.Navigate(typeof(SchedulePage), items);
 			}
 			else {
-				var cachedSchedule = await HistoryManager.GetScheduleFor(e.Parameter as string);
-				Frame.Navigate(typeof(SchedulePage), cachedSchedule);
+				var cachedSchedules = await Task.WhenAll(requestedClasses.Select(x => HistoryManager.GetScheduleFor(x)));
+				Frame.Navigate(typeof(SchedulePage), cachedSchedules);
 			}
 		}
 
 		private void FillClassList() {
-			lvClassList.Items.Clear();
-			foreach (var item in _classes.Where(x => x.displayname.ToLower().Contains(tbFilter.Text.ToLower()))) {
-				lvClassList.Items.Add(item);
+			var currentSelected = lvClassList.SelectedItems.ToArray();
+			lvClassList.ItemsSource = _classes.Where(x => x.displayname.ToLower().Contains(tbFilter.Text.ToLower()));
+			foreach (var selected in currentSelected) {
+				lvClassList.SelectedItems.Add(selected);
 			}
-		}
-
-		private void lvClassList_SelectionChanged(object sender, SelectionChangedEventArgs e) {
-			var item = e.AddedItems.First();
-			if (!(item is ClassInfo)) {
-				return;
-			}
-			Frame.Navigate(typeof(SchedulePage), (ClassInfo)item);
 		}
 
 		private void tbFilter_TextChanged(object sender, TextChangedEventArgs e) {
@@ -87,6 +82,34 @@ namespace WindesheimRooster {
 
 		private void History_Click(object sender, RoutedEventArgs e) {
 			Frame.Navigate(typeof(HistoryPage));
+		}
+
+		private void Button_Click(object sender, RoutedEventArgs e) {
+			var classInfo = (sender as Button)?.Tag;
+			if (classInfo == null) {
+				return;
+			}
+			Frame.Navigate(typeof(SchedulePage), new ClassInfo[] { classInfo as ClassInfo });
+		}
+
+		private void ViewMergedList_Click(object sender, RoutedEventArgs e) {
+			Frame.Navigate(typeof(SchedulePage), _selectedClasses);
+		}
+
+		private void CheckBox_Tapped(object sender, TappedRoutedEventArgs e) {
+			var checkbox = sender as CheckBox;
+			var @class = checkbox.Tag as ClassInfo;
+			if (checkbox.IsChecked == true) {
+				_selectedClasses.Add(@class);
+			}
+			else {
+				_selectedClasses.Remove(@class);
+			}
+		}
+
+		private void CheckBox_Loaded(object sender, RoutedEventArgs e) {
+			var checkbox = sender as CheckBox;
+			checkbox.IsChecked = _selectedClasses.Contains(checkbox.Tag as ClassInfo);
 		}
 	}
 }

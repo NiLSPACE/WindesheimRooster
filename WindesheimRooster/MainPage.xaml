@@ -5,6 +5,7 @@
     xmlns:local="using:WindesheimRooster"
     xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
     xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:classes="using:WindesheimRooster.BusinessLayer.Models.Classes"
     mc:Ignorable="d">
 
     <Grid Background="{ThemeResource ApplicationPageBackgroundThemeBrush}">
@@ -13,13 +14,24 @@
             <RowDefinition Height="541*"/>
             <RowDefinition Height="51*"/>
         </Grid.RowDefinitions>
-        <ListView x:Name="lvClassList" Margin="0,10,0,8" SelectionChanged="lvClassList_SelectionChanged" Grid.Row="1" Grid.RowSpan="1"/>
-        <TextBox x:Name="tbFilter" Margin="10,10,10,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" PlaceholderText="Filter" TextChanged="tbFilter_TextChanged" IsEnabled="False" Height="32"/>
+        <TextBox x:Name="tbFilter" Margin="10,10,10,0" TextWrapping="Wrap" Text="" VerticalAlignment="Top" PlaceholderText="Filter" TextChanged="tbFilter_TextChanged" IsEnabled="False" Height="32" Grid.Row="0"/>
+        <ListView SelectionMode="None" x:Name="lvClassList" Margin="0,10,0,8"  Grid.Row="1" Grid.RowSpan="1">
+            <ListView.ItemTemplate>
+                <DataTemplate x:DataType="classes:ClassInfo">
+                    <StackPanel Orientation="Horizontal">
+                        <CheckBox Tapped="CheckBox_Tapped" Tag="{x:Bind}" Loaded="CheckBox_Loaded"></CheckBox>
+                        <Button HorizontalAlignment="Right" Click="Button_Click" Content="View" Tag="{x:Bind}"></Button>
+                        <TextBlock Margin="5,0,0,0" HorizontalAlignment="Left" Text="{x:Bind displayname}"></TextBlock>
+                    </StackPanel>
+                </DataTemplate>
+            </ListView.ItemTemplate>
+        </ListView>
         <CommandBar Grid.Row="2" Margin="0,0,0,0" VerticalAlignment="Stretch">
             <CommandBar.Content>
                 <Grid/>
             </CommandBar.Content>
             <AppBarButton Icon="Clock" Label="History" Click="History_Click"/>
+            <AppBarButton Icon="AllApps" Label="View Merged Schedule" Click="ViewMergedList_Click"></AppBarButton>
         </CommandBar>
     </Grid>
 </Page>

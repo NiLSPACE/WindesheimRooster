@@ -41,7 +41,7 @@ namespace WindesheimRooster.BusinessLayer.Models.Classes
 		public string pattern { get; set; }
 	}
 
-	public struct ClassInfo
+	public class ClassInfo
 	{
 		public int id { get; set; }
 		public string name { get; set; }

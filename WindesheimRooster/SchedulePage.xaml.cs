@@ -28,7 +28,7 @@ namespace WindesheimRooster {
 	/// An empty page that can be used on its own or navigated to within a Frame.
 	/// </summary>
 	public sealed partial class SchedulePage : Page {
-		private ClassInfo _currentClass;
+		private ClassInfo[] _currentClasses;
 		private int _weekOffset = 0;
 		private const string NO_SCHEDULE_FOUND_MESSAGE = "No schedule found";
 
@@ -61,73 +61,83 @@ namespace WindesheimRooster {
 			// Reset the offset back to 0 in case the SchedulePage was used before.
 			_weekOffset = 0;
 
-			Schedule schedule;
+			IEnumerable<Schedule> schedules;
 
 			// If the provided argument is a ClassInfo object we need to retrieve the schedule from internet.
 			// If it's a Schedule object we can use it directly.
-			if (e.Parameter is ClassInfo) {
-				_currentClass = (ClassInfo)e.Parameter;
-				EnablePinButton(_currentClass);
-				schedule = await WindesheimManager.GetScheduleForClass(_currentClass.id.ToString(), _currentClass.displayname);
+			if (e.Parameter is IEnumerable<ClassInfo> currentClasses) {
+				_currentClasses = currentClasses.ToArray();
+
+				EnablePinButton(currentClasses);
+
+				var scheduleTasks = currentClasses.Select(x => WindesheimManager.GetScheduleForClass(x.id.ToString(), x.displayname));
+				schedules = await Task.WhenAll(scheduleTasks);
 			}
-			else if (e.Parameter is Schedule) {
-				schedule = e.Parameter as Schedule;
+			else if (e.Parameter is IEnumerable<Schedule> schedule) {
+				schedules = schedule;
 			}
 			else {
-				throw new Exception("Unexpected parameter provided.");
+				throw new Exception("Unexpected parameter provided. Type is: " + e.Parameter.GetType().Name);
 			}
 
-			UpdateSchedule(schedule);
+			UpdateSchedule(schedules);
 		}
 
 		/// <summary>
 		/// Updates the screen with the provided schedule
 		/// </summary>
-		/// <param name="schedule"></param>
-		private void UpdateSchedule(Schedule schedule) {
+		/// <param name="schedules"></param>
+		private void UpdateSchedule(IEnumerable<Schedule> schedules) {
 			// Remove the current items
 			lvSchedule.Items.Clear();
 
-			if (schedule.result?.data?.elementPeriods == null) {
+			if (!schedules.Any(x => x?.result?.data?.elementPeriods != null)) {
 				lvSchedule.Items.Add(NO_SCHEDULE_FOUND_MESSAGE);
 				return;
 			}
+
 			string currentDate = DateTime.Now.ToString("dddd dd MMMM", CultureInfo.CurrentCulture);
 			bool currentDateInSelectedWeek = false;
-			foreach (var item in schedule.result.data.elementPeriods) {
-				var lessons = item.Value.OrderBy(x => x.date).ThenBy(x => x.startTime).GroupBy(x => new { x.date, x.lessonText });
-				int? lastTime = null;
-				foreach (var lesson in lessons) {
-					if (lastTime == null || lastTime != lesson.First().date) {
-						var date = DateTime.ParseExact(lesson.First().date.ToString(), "yyyyMMdd", CultureInfo.InvariantCulture);
-						var formattedDate = date.ToString("dddd dd MMMM", CultureInfo.CurrentCulture);
-						lastTime = lesson.First().date;
+			var locations = schedules.SelectMany(schedule => schedule.result.data.elements.Where(x => x.type == 4));
+			var teachers = schedules.SelectMany(schedule => schedule.result.data.elements.Where(x => x.type == 2));
+			var lessons = schedules
+				.SelectMany(x => x.result.data.elementPeriods)
+				.SelectMany(x => x.Value)
+				.OrderBy(x => x.date)
+				.ThenBy(x => x.startTime)
+				.GroupBy(x => new { x.date, x.lessonText });
 
-						// lastTime is an integer with the format yyyyMMdd
-						lvSchedule.Items.Add(formattedDate);
+			int? lastTime = null;
+			foreach (var lesson in lessons) {
+				if (lastTime == null || lastTime != lesson.First().date) {
+					var date = DateTime.ParseExact(lesson.First().date.ToString(), "yyyyMMdd", CultureInfo.InvariantCulture);
+					var formattedDate = date.ToString("dddd dd MMMM", CultureInfo.CurrentCulture);
+					lastTime = lesson.First().date;
 
-						// If the date is the current date automatically scroll to it.
-						if (currentDate == formattedDate) {
-							// Don't scroll into view just yet.
-							// Not all items have been added which could cause issues.
-							currentDateInSelectedWeek = true;
-						}
+					// lastTime is an integer with the format yyyyMMdd
+					lvSchedule.Items.Add(formattedDate);
+
+					// If the date is the current date automatically scroll to it.
+					if (currentDate == formattedDate) {
+						// Don't scroll into view just yet.
+						// Not all items have been added which could cause issues.
+						currentDateInSelectedWeek = true;
 					}
+				}
 
-					StringBuilder builder = new StringBuilder();
-					builder.AppendLine(lesson.First().lessonText);
-					builder.AppendLine("Start: " + lesson.Min(x => x.startTime).ToString().Reverse().Insert(2, ":").Reverse());           // Add a : as the third character
-					builder.AppendLine("End: " + lesson.Max(x => x.endTime).ToString().Reverse().Insert(2, ":").Reverse());               // Add a : as the third character
-					builder.AppendLine("Location: " + (schedule.result.data.elements.Where(x => x.type == 4)?.FirstOrDefault(x => x.id == lesson.First().elements.FirstOrDefault(y => y.type == 4)?.id)?.displayname ?? "<unknown>"));
-					builder.AppendLine("Teacher: " + (schedule.result.data.elements.Where(x => x.type == 2)?.FirstOrDefault(x => x.id == lesson.First().elements.FirstOrDefault(y => y.type == 2)?.id)?.displayname ?? "<unknown>"));
+				StringBuilder builder = new StringBuilder();
+				builder.AppendLine(lesson.First().lessonText);
+				builder.AppendLine("Start: " + lesson.Min(x => x.startTime).ToString().Reverse().Insert(2, ":").Reverse());           // Add a : as the third character
+				builder.AppendLine("End: " + lesson.Max(x => x.endTime).ToString().Reverse().Insert(2, ":").Reverse());               // Add a : as the third character
+				builder.AppendLine("Location: " + locations.FirstOrDefault(x => x.id == lesson.First().elements.FirstOrDefault(y => y.type == 4)?.id)?.displayname ?? "<unknown>");
+				builder.AppendLine("Teacher: " + teachers.FirstOrDefault(x => x.id == lesson.First().elements.FirstOrDefault(y => y.type == 2)?.id)?.displayname ?? "<unknown>");
 
-					string text = builder.ToString();
-					lvSchedule.Items.Add(text);
+				string text = builder.ToString();
+				lvSchedule.Items.Add(text);
 
-					// Select the lesson if the time and date matches the current time.
-					if ((lesson.First().date.ToString() == DateTime.Now.ToString("yyyyMMdd")) && TimeIsCurrentSchedule(lesson)) {
-						lvSchedule.SelectedItem = text;
-					}
+				// Select the lesson if the time and date matches the current time.
+				if ((lesson.First().date.ToString() == DateTime.Now.ToString("yyyyMMdd")) && TimeIsCurrentSchedule(lesson)) {
+					lvSchedule.SelectedItem = text;
 				}
 			}
 
@@ -158,13 +168,13 @@ namespace WindesheimRooster {
 		/// Enabled the pin button if the user doesn't have a tile yet.
 		/// </summary>
 		/// <param name="info"></param>
-		private async void EnablePinButton(ClassInfo info) {
+		private async void EnablePinButton(IEnumerable<ClassInfo> info) {
 			var allTiles = await SecondaryTile.FindAllAsync();
-			var exists = SecondaryTile.Exists("ScheduleTile" + info.displayname);
+			var exists = SecondaryTile.Exists("ScheduleTile" + String.Join("_", info.Select(x => x.displayname)));
 			btnPin.IsEnabled = !exists;
 		}
 
-		private async void RequestCreateTile(ClassInfo info) {
+		private async void RequestCreateTile(ClassInfo[] info) {
 			// Prepare package images for all four tile sizes in our tile to be pinned as well as for the square30x30 logo used in the Apps view.  
 			Uri square150x150Logo = new Uri("ms-appx:///Assets/Square150x150Logo.scale-200.png");
 			Uri wide310x150Logo = new Uri("ms-appx:///Assets/Wide310x150Logo.scale-200.png");
@@ -176,9 +186,9 @@ namespace WindesheimRooster {
 			// It can be set to TileSize.Square150x150, TileSize.Wide310x150, or TileSize.Default.  
 			// If set to TileSize.Wide310x150, then the asset for the wide size must be supplied as well.
 			// TileSize.Default will default to the wide size if a wide size is provided, and to the medium size otherwise. 
-			SecondaryTile secondaryTile = new SecondaryTile("ScheduleTile" + info.displayname,
-															info.displayname,
-															info.displayname,
+			SecondaryTile secondaryTile = new SecondaryTile("ScheduleTile" + String.Join("_", info.Select(x => x.displayname)),
+															 String.Join(", ", info.Select(x => x.displayname)),
+															 String.Join(", ", info.Select(x => x.displayname)),
 															square150x150Logo,
 															TileSize.Square150x150);
 
@@ -209,7 +219,7 @@ namespace WindesheimRooster {
 		}
 
 		private void AppBarButton_Click(object sender, RoutedEventArgs e) {
-			RequestCreateTile(_currentClass);
+			RequestCreateTile(_currentClasses);
 		}
 
 		private void lvSchedule_ContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args) {
@@ -227,13 +237,17 @@ namespace WindesheimRooster {
 		}
 
 		private async void BtnNextWeek_Click(object sender, RoutedEventArgs e) {
-			var schedule = await WindesheimManager.GetScheduleForClass(_currentClass.id.ToString(), _currentClass.displayname, ++_weekOffset);
-			UpdateSchedule(schedule);
+			var week = _weekOffset++;
+			var scheduleTasks = _currentClasses.Select(x => WindesheimManager.GetScheduleForClass(x.id.ToString(), x.displayname, week));
+			var schedules = await Task.WhenAll(scheduleTasks);
+			UpdateSchedule(schedules);
 		}
 
 		private async void BtnPreviousWeek_Click(object sender, RoutedEventArgs e) {
-			var schedule = await WindesheimManager.GetScheduleForClass(_currentClass.id.ToString(), _currentClass.displayname, --_weekOffset);
-			UpdateSchedule(schedule);
+			var week = _weekOffset--;
+			var scheduleTasks = _currentClasses.Select(x => WindesheimManager.GetScheduleForClass(x.id.ToString(), x.displayname, week));
+			var schedules = await Task.WhenAll(scheduleTasks);
+			UpdateSchedule(schedules);
 		}
 	}
 }

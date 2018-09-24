@@ -52,7 +52,7 @@ namespace WindesheimRooster {
 		private async void lvHistoryList_SelectionChanged(object sender, SelectionChangedEventArgs e) {
 			var json = await FileIO.ReadTextAsync(((FileInfo)e.AddedItems.First()).File);
 			var schedule = JsonConvert.DeserializeObject<Schedule>(json);
-			Frame.Navigate(typeof(SchedulePage), schedule);
+			Frame.Navigate(typeof(SchedulePage), new Schedule[] { schedule });
 		}
 	}
 }
