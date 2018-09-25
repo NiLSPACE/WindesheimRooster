@@ -12,6 +12,7 @@ using WindesheimRooster.BusinessLayer.Models.Classes;
 using WindesheimRooster.BusinessLayer.Models.Schedule;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
+using Windows.Networking.Connectivity;
 using Windows.UI.StartScreen;
 using Windows.UI.Xaml;
 using Windows.UI.Xaml.Controls;
@@ -52,7 +53,9 @@ namespace WindesheimRooster {
 		/// Enabled or disables the Week Offset buttons depending on the internet;
 		/// </summary>
 		private void CheckWeekOffsetButtons() {
-			var hasInternet = NetworkInterface.GetIsNetworkAvailable();
+			ConnectionProfile connections = NetworkInformation.GetInternetConnectionProfile();
+			bool hasInternet = connections != null && connections.GetNetworkConnectivityLevel() == NetworkConnectivityLevel.InternetAccess;
+
 			btnNextWeek.IsEnabled = hasInternet;
 			btnPreviousWeek.IsEnabled = hasInternet;
 		}
@@ -61,7 +64,6 @@ namespace WindesheimRooster {
 			// Reset the offset back to 0 in case the SchedulePage was used before.
 			_weekOffset = 0;
 
-			IEnumerable<Schedule> schedules;
 
 			// If the provided argument is a ClassInfo object we need to retrieve the schedule from internet.
 			// If it's a Schedule object we can use it directly.
@@ -70,17 +72,15 @@ namespace WindesheimRooster {
 
 				EnablePinButton(currentClasses);
 
-				var scheduleTasks = currentClasses.Select(x => WindesheimManager.GetScheduleForClass(x.id.ToString(), x.displayname));
-				schedules = await Task.WhenAll(scheduleTasks);
+				await RequestAndLoadSchedule();
 			}
 			else if (e.Parameter is IEnumerable<Schedule> schedule) {
-				schedules = schedule;
+				UpdateSchedule(schedule);
 			}
 			else {
 				throw new Exception("Unexpected parameter provided. Type is: " + e.Parameter.GetType().Name);
 			}
 
-			UpdateSchedule(schedules);
 		}
 
 		/// <summary>
@@ -225,29 +225,33 @@ namespace WindesheimRooster {
 		private void lvSchedule_ContainerContentChanging(ListViewBase sender, ContainerContentChangingEventArgs args) {
 			// This is a hack to see if the item is a date header
 			if (args.Item.Equals(NO_SCHEDULE_FOUND_MESSAGE)) {
-				args.ItemContainer.Background = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 200, 255, 200));
+				args.ItemContainer.Background = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 50, 50, 50));
 			}
 			else if ((args.Item as string).Split('\n').Length == 1) {
-				args.ItemContainer.Background = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 240, 240, 240));
+				args.ItemContainer.Background = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 75, 75, 75));
 			}
 			else {
 				// For some reason the background color wasn't always the default so we specifically make it white here.
-				args.ItemContainer.Background = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 255, 255, 255));
+				args.ItemContainer.Background = new SolidColorBrush(Windows.UI.Color.FromArgb(255, 0, 0, 0));
 			}
 		}
 
 		private async void BtnNextWeek_Click(object sender, RoutedEventArgs e) {
-			var week = _weekOffset++;
-			var scheduleTasks = _currentClasses.Select(x => WindesheimManager.GetScheduleForClass(x.id.ToString(), x.displayname, week));
-			var schedules = await Task.WhenAll(scheduleTasks);
-			UpdateSchedule(schedules);
+			_weekOffset++;
+			await RequestAndLoadSchedule();
 		}
 
 		private async void BtnPreviousWeek_Click(object sender, RoutedEventArgs e) {
-			var week = _weekOffset--;
-			var scheduleTasks = _currentClasses.Select(x => WindesheimManager.GetScheduleForClass(x.id.ToString(), x.displayname, week));
+			_weekOffset--;
+			await RequestAndLoadSchedule();
+		}
+
+		private async Task RequestAndLoadSchedule() {
+			lvSchedule.IsEnabled = false;
+			var scheduleTasks = _currentClasses.Select(x => WindesheimManager.GetScheduleForClass(x.id.ToString(), x.displayname, _weekOffset));
 			var schedules = await Task.WhenAll(scheduleTasks);
 			UpdateSchedule(schedules);
+			lvSchedule.IsEnabled = true;
 		}
 	}
 }
