@@ -21,7 +21,11 @@
     <AppxAutoIncrementPackageRevision>False</AppxAutoIncrementPackageRevision>
     <AppxBundle>Always</AppxBundle>
     <AppxBundlePlatforms>arm</AppxBundlePlatforms>
-    <AppxPackageDir>C:\Users\Niels\Documents\Visual Studio 2017\Projects\WindesheimRooster\WindesheimRooster\AppPackages\2018-03-22</AppxPackageDir>
+    <AppxPackageDir>G:\Projects\WindesheimRoosterBuilds\2018-09-24</AppxPackageDir>
+    <GenerateAppInstallerFile>False</GenerateAppInstallerFile>
+    <AppInstallerUpdateFrequency>1</AppInstallerUpdateFrequency>
+    <AppInstallerCheckForUpdateFrequency>OnApplicationRun</AppInstallerCheckForUpdateFrequency>
+    <PackageCertificateThumbprint>E4AFD4FD4B5084CA4C6CB7EEF1D6E68F0D2D0282</PackageCertificateThumbprint>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
     <DebugSymbols>true</DebugSymbols>
