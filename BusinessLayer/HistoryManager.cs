@@ -57,7 +57,8 @@ namespace WindesheimRooster.BusinessLayer {
 			if (item == null || !(item is StorageFile)) {
 				return false;
 			}
-			if ((item.DateCreated - DateTime.Now) > TimeSpan.FromDays(7)) {
+			if ((DateTime.Now - item.DateCreated) > TimeSpan.FromDays(7)) {
+				await item.DeleteAsync();
 				return false;
 			}
 			return true;
