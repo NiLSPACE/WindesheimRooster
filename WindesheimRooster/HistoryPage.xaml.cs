@@ -5,7 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices.WindowsRuntime;
 using WindesheimRooster.BusinessLayer;
-using WindesheimRooster.BusinessLayer.Models.Schedule;
+using WindesheimRooster.BusinessLayer.Models;
 using Windows.Foundation;
 using Windows.Foundation.Collections;
 using Windows.Storage;
@@ -49,10 +49,9 @@ namespace WindesheimRooster {
 			}
 		}
 
-		private async void lvHistoryList_SelectionChanged(object sender, SelectionChangedEventArgs e) {
-			var json = await FileIO.ReadTextAsync(((FileInfo)e.AddedItems.First()).File);
-			var schedule = JsonConvert.DeserializeObject<Schedule>(json);
-			Frame.Navigate(typeof(SchedulePage), new Schedule[] { schedule });
-		}
+		private void lvHistoryList_SelectionChanged(object sender, SelectionChangedEventArgs e) {
+            var className = ((FileInfo)e.AddedItems.First()).File.Name;
+            Frame.Navigate(typeof(ClassSchedule), new string[] { className });
+        }
 	}
 }

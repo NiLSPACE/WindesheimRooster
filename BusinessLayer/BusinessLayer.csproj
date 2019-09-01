@@ -109,8 +109,13 @@
   <ItemGroup>
     <Compile Include="Extensions.cs" />
     <Compile Include="HistoryManager.cs" />
-    <Compile Include="Models\Classes\Classes.cs" />
-    <Compile Include="Models\Schedule\Schedule.cs" />
+    <Compile Include="Models\Klas.cs" />
+    <Compile Include="Models\Les.cs" />
+    <Compile Include="CookieManager.cs" />
+    <Compile Include="Response\InvalidCookie.cs" />
+    <Compile Include="Response\IResponse.cs" />
+    <Compile Include="Response\NoInternet.cs" />
+    <Compile Include="Response\Success.cs" />
     <Compile Include="WindesheimAPI.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="WindesheimManager.cs" />

@@ -2,29 +2,51 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.NetworkInformation;
 using System.Text;
 using System.Threading.Tasks;
-using WindesheimRooster.BusinessLayer.Models.Classes;
-using WindesheimRooster.BusinessLayer.Models.Schedule;
+using WindesheimRooster.BusinessLayer.Models;
+using WindesheimRooster.BusinessLayer.Response;
 
-namespace WindesheimRooster.BusinessLayer {
-	public class WindesheimManager {
-		public async static Task<Schedule> GetScheduleForClass(string classId, string className, int weekOffset = 0) {
-			var rawSchedule = await WindesheimAPI.GetScheduleForClass(classId, weekOffset);
-			if (weekOffset == 0) {
-				await HistoryManager.AddToHistory(className, rawSchedule);
+namespace WindesheimRooster.BusinessLayer
+{
+	public class WindesheimManager
+	{
+		public async static Task<IResponse> GetScheduleForClass(string className)
+		{
+			string schedule;
+			if (NetworkInterface.GetIsNetworkAvailable())
+			{
+				schedule = await WindesheimAPI.GetScheduleForClass(className);
+				await HistoryManager.SaveSchedule(className, schedule);
 			}
-			return JsonConvert.DeserializeObject<Schedule>(rawSchedule);
+			else
+			{
+				schedule = await HistoryManager.GetSchedule(className);
+				if (schedule == null)
+				{
+					return new NoInternet();
+				}
+			}
+
+			if (schedule.StartsWith("<"))
+			{
+				return new InvalidCookie();
+			}
+
+			return new Success<List<Les>>(JsonConvert.DeserializeObject<List<Les>>(schedule));
 		}
 
-		public async static Task<ClassInfo[]> GetAllClasses() {
-			if (await HistoryManager.HasReleventClassList()) {
-				return await HistoryManager.GetClassList();
+		public async static Task<List<Klas>> GetAllClasses()
+		{
+			if (await HistoryManager.HasReleventClassList() || !NetworkInterface.GetIsNetworkAvailable())
+			{
+				return await HistoryManager.GetKlassen();
 			}
 
-			var rawClasses = await WindesheimAPI.GetAllClasses();
+			var rawClasses = await WindesheimAPI.GetClasses();
 			await HistoryManager.SaveClassList(rawClasses);
-			return JsonConvert.DeserializeObject<ClassJsonResponse>(rawClasses).elements;
+			return JsonConvert.DeserializeObject<List<Klas>>(rawClasses);
 		}
 	}
 }

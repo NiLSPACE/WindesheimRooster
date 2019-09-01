@@ -2,7 +2,9 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net.NetworkInformation;
 using System.Runtime.InteropServices.WindowsRuntime;
+using WindesheimRooster.BusinessLayer;
 using Windows.ApplicationModel;
 using Windows.ApplicationModel.Activation;
 using Windows.Foundation;
@@ -39,7 +41,7 @@ namespace WindesheimRooster
         /// will be used such as when the application is launched to open a specific file.
         /// </summary>
         /// <param name="e">Details about the launch request and process.</param>
-        protected override void OnLaunched(LaunchActivatedEventArgs e)
+        protected override async void OnLaunched(LaunchActivatedEventArgs e)
         {
 			Frame rootFrame = Window.Current.Content as Frame;
 
@@ -78,7 +80,19 @@ namespace WindesheimRooster
                     // When the navigation stack isn't restored navigate to the first page,
                     // configuring the new page by passing required information as a navigation
                     // parameter
-                    rootFrame.Navigate(typeof(MainPage), e.Arguments);
+                    await CookieManager.Initialize();
+                    if (!String.IsNullOrEmpty(e.Arguments))
+                    {
+                        rootFrame.Navigate(typeof(ClassSchedule), e.Arguments.Split(',').Select(x => x.Trim()));
+                    }
+                    else if (NetworkInterface.GetIsNetworkAvailable())
+                    {
+                        rootFrame.Navigate(typeof(GetSessionToken), e.Arguments);
+                    }
+                    else
+                    {
+                        rootFrame.Navigate(typeof(MainPage), e.Arguments);
+                    }
                 }
                 // Ensure the current window is active
                 Window.Current.Activate();
