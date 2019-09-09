@@ -57,12 +57,6 @@ namespace WindesheimRooster
 
 			EnablePinButton(_klassen);
 
-			if (!CookieManager.AreCookiesRelevant())
-			{
-				Frame.Navigate(typeof(GetSessionToken), new NavigationParameter() { Parameter = e.Parameter, RedirectTo = typeof(ClassSchedule) });
-				return;
-			}
-
 			var requests = await Task.WhenAll(_klassen
 				.AsParallel()
 				.Select(async x => await WindesheimManager.GetScheduleForClass(x)));
@@ -72,13 +66,6 @@ namespace WindesheimRooster
 				lvSchedule.Items.Add(NO_INTERNET_AVAILBLE);
 				return;
 			}
-
-			if (requests.Any(x => x is InvalidCookie))
-			{
-				Frame.Navigate(typeof(GetSessionToken), new NavigationParameter() { Parameter = e.Parameter, RedirectTo = typeof(ClassSchedule) });
-				return;
-			}
-
 
 			var completeSchedule = requests.Cast<Success<List<Les>>>().SelectMany(x => x.Value)
 				.OrderBy(x => x.roosterdatum)

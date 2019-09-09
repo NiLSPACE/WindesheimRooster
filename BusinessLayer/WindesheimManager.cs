@@ -29,12 +29,15 @@ namespace WindesheimRooster.BusinessLayer
 				}
 			}
 
-			if (schedule.StartsWith("<"))
+			try
 			{
-				return new InvalidCookie();
+				var res = JsonConvert.DeserializeObject<List<Les>>(schedule);
+				return new Success<List<Les>>(res);
 			}
-
-			return new Success<List<Les>>(JsonConvert.DeserializeObject<List<Les>>(schedule));
+			catch (Exception)
+			{
+				return new InvalidResponse();
+			}
 		}
 
 		public async static Task<List<Klas>> GetAllClasses()

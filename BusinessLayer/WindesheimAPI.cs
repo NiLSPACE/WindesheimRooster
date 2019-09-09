@@ -15,18 +15,13 @@ namespace WindesheimRooster.BusinessLayer
 		{
 			var request = new HttpRequestMessage(method, uri);
 			request.Headers.Accept.Add(new Windows.Web.Http.Headers.HttpMediaTypeWithQualityHeaderValue("application/json"));
-			request.Headers.Host = new Windows.Networking.HostName("windesheimapi.azurewebsites.net");
-			var cookies = CookieManager.GetCookies();
-			foreach (var cookie in cookies)
-			{
-				request.Headers.Cookie.Add(new Windows.Web.Http.Headers.HttpCookiePairHeaderValue(cookie.Name, cookie.Value));
-			}
+			request.Headers.Host = new Windows.Networking.HostName("api.windesheim.nl");
 			return request;
 		}
 
 		internal static async Task<string> GetScheduleForClass(string className)
 		{
-			var uri = new Uri($"https://windesheimapi.azurewebsites.net/api/v1/Klas/{className}/Les");
+			var uri = new Uri($"http://api.windesheim.nl/api/Klas/{className}/Les");
 			var request = CreateRequest(HttpMethod.Get, uri);
 			var client = new HttpClient();
 			var result = await client.SendRequestAsync(request);
@@ -36,7 +31,7 @@ namespace WindesheimRooster.BusinessLayer
 
 		public static async Task<string> GetClasses()
 		{
-			Uri uri = new Uri("https://windesheimapi.azurewebsites.net/api/v1/Klas/");
+			Uri uri = new Uri("http://api.windesheim.nl/api/Klas/");
 			var request = CreateRequest(HttpMethod.Get, uri);
 			var client = new HttpClient();
 			var result = await client.SendRequestAsync(request);

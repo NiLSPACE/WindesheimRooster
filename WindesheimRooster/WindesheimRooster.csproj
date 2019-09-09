@@ -109,9 +109,6 @@
       <DependentUpon>ClassSchedule.xaml</DependentUpon>
     </Compile>
     <Compile Include="Extensions.cs" />
-    <Compile Include="GetSessionToken.xaml.cs">
-      <DependentUpon>GetSessionToken.xaml</DependentUpon>
-    </Compile>
     <Compile Include="HistoryPage.xaml.cs">
       <DependentUpon>HistoryPage.xaml</DependentUpon>
     </Compile>
@@ -143,10 +140,6 @@
       <SubType>Designer</SubType>
     </ApplicationDefinition>
     <Page Include="ClassSchedule.xaml">
-      <SubType>Designer</SubType>
-      <Generator>MSBuild:Compile</Generator>
-    </Page>
-    <Page Include="GetSessionToken.xaml">
       <SubType>Designer</SubType>
       <Generator>MSBuild:Compile</Generator>
     </Page>

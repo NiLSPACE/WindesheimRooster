@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace WindesheimRooster.BusinessLayer.Response
 {
-	public class InvalidCookie : IResponse
+	public class InvalidResponse : IResponse
 	{
 	}
 }

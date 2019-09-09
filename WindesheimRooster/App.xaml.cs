@@ -80,14 +80,9 @@ namespace WindesheimRooster
                     // When the navigation stack isn't restored navigate to the first page,
                     // configuring the new page by passing required information as a navigation
                     // parameter
-                    await CookieManager.Initialize();
                     if (!String.IsNullOrEmpty(e.Arguments))
                     {
                         rootFrame.Navigate(typeof(ClassSchedule), e.Arguments.Split(',').Select(x => x.Trim()));
-                    }
-                    else if (NetworkInterface.GetIsNetworkAvailable())
-                    {
-                        rootFrame.Navigate(typeof(GetSessionToken), e.Arguments);
                     }
                     else
                     {
